@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>AppIconMaker for Xcode12.3</title>
+<script type="module">
+import { downloadZip } from "./downloadZip.js";
+
+const blob2url = async (blob) => {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result);
+    };
+    reader.readAsDataURL(blob);
+  });
+};
+
+window.onload = async () => {
+  drophere.ondrop = drophere.ondragover = async (e) => {
+    if (e.type === "drop") {
+      const item = e.dataTransfer.items[0];
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      const img = new Image();
+      reader.onload = async (e) => {
+        img.src = e.target.result;
+        //drophere.appendChild(img);
+        const files = await makeIcons(img);
+        await downloadZip("icons.zip", files);
+
+        icons.style.display = "block";
+        for (const f of files.filter((f) => f.name.endsWith(".png"))) {
+          const img = new Image();
+          img.src = await blob2url(f.data);
+          icons.appendChild(img);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.preventDefault();
+  };
+};
+
+const makeIcons = async (srcimg) => {
+  const files = [];
+  const data = await (await fetch("./Contents.json")).json();
+  for (const d of data.images) {
+    const scale = parseInt(d.scale);
+    const size = parseFloat(d.size);
+    const rsize = size * scale;
+    const fn = "icon-" + size + (scale == 1 ? "" : "@" + scale + "x") + ".png";
+    console.log(fn, rsize, size, scale);
+    d.filename = fn;
+    files.push({ data: await makeImage(srcimg, rsize), name: fn });
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+  files.push({ data: blob, name: "Contents.json" });
+  return files;
+};
+
+const makeImage = async (srcimg, w) => {
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute('width', w);
+  canvas.setAttribute('height', w);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(srcimg, 0, 0, srcimg.width, srcimg.height, 0, 0, w, w);
+  return new Promise(resolve => {
+    canvas.toBlob(resolve, "image/png");
+  })
+};
+</script>
+<style>
+body {
+  font-family: sans-serif;
+}
+#drophere {
+  border: 2px dotted gray;
+  padding: 2em;
+  font-size: 120%;
+  text-align: center;
+}
+#icons {
+  display: none;
+  border: 2px dotted gray;
+  margin-top: 1em;
+}
+#icons img {
+  margin: .5em;
+}
+</style>
+<head>
+<body>
+<h1>AppIconMaker for Xcode12.3</h1>
+<div id="drophere">Drop here your image file</div>
+<div id="icons"></div>
+<hr>
+<div class="credit">
+App: <a href=https://fukuno.jig.jp/3084>福野泰介の一日一創</a> (<a href=https://github.com/taisukef/AppIconMaker>src on GitHub</a>)<br>
+</div>
+</body>
+</html>

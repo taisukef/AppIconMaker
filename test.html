@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charsat="utf-8">
+<script type="module">
+import { downloadZipImages } from "./downloadZipImages.js";
+
+window.onload = async () => {
+  download.onclick = async () => {
+      const images = await makeImages();
+      await downloadZipImages(images);
+  };
+};
+
+const makeImage = async (s, w, h) => {
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute('width', w);
+  canvas.setAttribute('height', h);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "blue";
+  ctx.font = "30px 'sans-serif'";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "center";
+  ctx.fillText(s, w / 2, h / 2);
+  return new Promise(result => {
+    canvas.toBlob(result, "image/png");
+  })
+};
+
+const makeImages = async () => {
+  const images = [];
+  for (let i = 0; i < 10; i++) {
+    images[i] = { data: await makeImage(i, 100, 100), name: i + ".png" };
+  }
+  return images;
+};
+</script>
+<head>
+<body>
+<button id=download>download</button>
+</body>
+</html>
